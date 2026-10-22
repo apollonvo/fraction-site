@@ -1,31 +1,29 @@
 * {
   box-sizing: border-box;
-  user-select: none; /* Prevents text selection on rapid clicking */
+  user-select: none;
 }
 
 body {
   margin: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  min-height: 100vh;
   background-color: #ffffff;
   color: #000000;
   font-family: 'Times New Roman', Times, serif;
-  overflow: hidden;
+  display: block; /* Removed centered flexbox */
+  padding: 4vw;
+  cursor: pointer;
+  overflow-x: hidden;
 }
 
 #math-container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 20px;
-  font-size: min(5.5vw, 42px); /* Scales automatically for mobile and desktop */
-  cursor: pointer;
-  max-width: 95vw;
-  line-height: 1.2;
+  justify-content: flex-start; /* Anchors strictly to the left */
+  flex-wrap: wrap; /* Wraps cleanly to next line without shifting */
+  gap: 16px 12px;
+  font-size: min(6vw, 44px); /* Responsive sizing */
+  line-height: 1.4;
+  text-align: left;
 }
 
 /* Vertical Fraction Layout */
@@ -59,7 +57,7 @@ body {
   top: 50%;
   width: 140%;
   height: 2px;
-  background-color: #0066cc; /* Blue diagonal line */
+  background-color: #0066cc;
   transform: rotate(-45deg);
 }
 
@@ -70,7 +68,6 @@ body {
   font-weight: bold;
 }
 
-/* Small number positions: top for numerator, bottom for denominator */
 .num .cross .sub-num {
   top: -14px;
   right: -8px;
