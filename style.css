@@ -3,30 +3,57 @@
   user-select: none;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: #ffffff;
-  color: #000000;
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+  width: 100vw !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
   font-family: 'Times New Roman', Times, serif;
-  display: block; /* Removed centered flexbox */
-  padding: 4vw;
+  display: block !important; /* Strictly overrides any centered flexbox */
   cursor: pointer;
   overflow-x: hidden;
 }
 
+/* Outer layout wrapper anchored to top-left */
 #math-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* Anchors strictly to the left */
-  flex-wrap: wrap; /* Wraps cleanly to next line without shifting */
-  gap: 16px 12px;
-  font-size: min(6vw, 44px); /* Responsive sizing */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important; /* Hard left align */
+  justify-content: flex-start !important; /* Hard top align */
+  padding: 30px 24px !important;
+  font-size: min(6vw, 42px);
   line-height: 1.4;
-  text-align: left;
+  text-align: left !important;
 }
 
-/* Vertical Fraction Layout */
+/* The main math equation line */
+.math-equation-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 16px 10px;
+  width: 100%;
+}
+
+/* The scratchpad area for mixed-number conversion lines below the equation */
+.scratchpad {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.85em; /* Slightly smaller for secondary scratchpad notes */
+  color: #111;
+  width: 100%;
+}
+
+.scratchpad-line {
+  white-space: nowrap;
+}
+
+/* Vertical Fractions */
 .frac {
   display: inline-flex;
   flex-direction: column;
