@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Addition Practice</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div id="math-container"></div>
+
+  <script src="../student.js"></script>
+  <script>
+    // Fractions are formatted using standard HTML markup
+    const DATA = [
+      [
+        '<span class="frac"><span class="num">2</span><span class="den">3</span></span> + <span class="frac"><span class="num">1</span><span class="den">6</span></span>',
+        '<span class="frac"><span class="num">2 · 2</span><span class="den">3 · 2</span></span> + <span class="frac"><span class="num">1</span><span class="den">6</span></span>',
+        '<span class="frac"><span class="num">4</span><span class="den">6</span></span> + <span class="frac"><span class="num">1</span><span class="den">6</span></span>',
+        '<span class="frac"><span class="num">5</span><span class="den">6</span></span>'
+      ]
+    ];
+    new MathPresenter(DATA);
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fast Authoring Tool</title>
+  <style>
+    body { font-family: monospace; padding: 24px; max-width: 800px; margin: auto; }
+    .row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    input { width: 60px; height: 32px; font-size: 18px; text-align: center; }
+    select { height: 36px; font-size: 18px; }
+    textarea { width: 100%; height: 180px; font-family: monospace; margin-top: 10px; }
+    .note { color: #555; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <h2>Rapid Fraction Problem Creator</h2>
+  <div class="note">
+    Shortcuts: [Space] = jump fields | [z] = + | [x] = - | [c] = · | [v] = ÷
+  </div>
+
+  <div class="row">
+    <input id="n1" placeholder="Num1"> / <input id="d1" placeholder="Den1">
+    <select id="op">
+      <option value="+">+</option>
+      <option value="-">-</option>
+      <option value="*">·</option>
+      <option value="/">÷</option>
+    </select>
+    <input id="n2" placeholder="Num2"> / <input id="d2" placeholder="Den2">
+    <button onclick="generate()">Generate Steps</button>
+  </div>
+
+  <h3>Editable Steps Output:</h3>
+  <div id="steps-editor"></div>
+
+  <button onclick="exportToJSON()" style="margin-top: 15px;">Export Step Array</button>
+  <textarea id="output" placeholder="Copy-paste output from here..."></textarea>
+
+  <script>
+    // Math Utilities
+    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+    const lcm = (a, b) => (a * b) / gcd(a, b);
+
+    const fHtml = (n, d) => d === 1 
+      ? `${n}` 
+      : `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+
+    // Keyboard Navigation
+    const inputs = ['n1', 'd1', 'n2', 'd2'];
+    inputs.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          const next = inputs[(idx + 1) % inputs.length];
+          document.getElementById(next).focus();
+        }
+        if (e.key === 'z') { e.preventDefault(); document.getElementById('op').value = '+'; }
+        if (e.key === 'x') { e.preventDefault(); document.getElementById('op').value = '-'; }
+        if (e.key === 'c') { e.preventDefault(); document.getElementById('op').value = '*'; }
+        if (e.key === 'v') { e.preventDefault(); document.getElementById('op').value = '/'; }
+        if (e.key === 'Enter') { generate(); }
+      });
+    });
+
+    let currentSteps = [];
+
+    function generate() {
+      let n1 = parseInt(document.getElementById('n1').value);
+      let d1 = parseInt(document.getElementById('d1').value) || 1;
+      let op = document.getElementById('op').value;
+      let n2 = parseInt(document.getElementById('n2').value);
+      let d2 = parseInt(document.getElementById('d2').value) || 1;
+
+      currentSteps = [];
+      const opSym = op === '*' ? '·' : (op === '/' ? '÷' : op);
+
+      // Step 0: Raw problem
+      currentSteps.push(`${fHtml(n1, d1)} ${opSym} ${fHtml(n2, d2)}`);
+
+      if (op === '+' || op === '-') {
+        const L = lcm(d1, d2);
+        const m1 = L / d1, m2 = L / d2;
+        if (d1 !== d2) {
+          currentSteps.push(`<span class="frac"><span class="num">${n1} · ${m1}</span><span class="den">${d1} · ${m1}</span></span> ${op} <span class="frac"><span class="num">${n2} · ${m2}</span><span class="den">${d2} · ${m2}</span></span>`);
+          currentSteps.push(`${fHtml(n1 * m1, L)} ${op} ${fHtml(n2 * m2, L)}`);
+        }
+        const numRes = op === '+' ? (n1 * m1 + n2 * m2) : (n1 * m1 - n2 * m2);
+        currentSteps.push(fHtml(numRes, L));
+        const g = gcd(Math.abs(numRes), L);
+        if (g > 1) currentSteps.push(fHtml(numRes / g, L / g));
+      } 
+      else if (op === '*') {
+        const g1 = gcd(n1, d2);
+        const g2 = gcd(n2, d1);
+        if (g1 > 1 || g2 > 1) {
+          const crossN1 = g1 > 1 ? `<span class="cross">${n1}<span class="sub-num">${n1/g1}</span></span>` : n1;
+          const crossD2 = g1 > 1 ? `<span class="cross">${d2}<span class="sub-num">${d2/g1}</span></span>` : d2;
+          const crossN2 = g2 > 1 ? `<span class="cross">${n2}<span class="sub-num">${n2/g2}</span></span>` : n2;
+          const crossD1 = g2 > 1 ? `<span class="cross">${d1}<span class="sub-num">${d1/g2}</span></span>` : d1;
+          currentSteps.push(`<span class="frac"><span class="num">${crossN1}</span><span class="den">${crossD1}</span></span> · <span class="frac"><span class="num">${crossN2}</span><span class="den">${crossD2}</span></span>`);
+        }
+        const finalN = (n1 / g1) * (n2 / g2);
+        const finalD = (d1 / g2) * (d2 / g1);
+        currentSteps.push(fHtml(finalN, finalD));
+      }
+      else if (op === '/') {
+        currentSteps.push(`${fHtml(n1, d1)} · ${fHtml(d2, n2)}`);
+        // Recurse to multiplication logic
+        const g1 = gcd(n1, n2);
+        const g2 = gcd(d2, d1);
+        const finalN = (n1 / g1) * (d2 / g2);
+        const finalD = (d1 / g2) * (n2 / g1);
+        currentSteps.push(fHtml(finalN, finalD));
+      }
+
+      renderEditor();
+    }
+
+    function renderEditor() {
+      const box = document.getElementById('steps-editor');
+      box.innerHTML = '';
+      currentSteps.forEach((step, i) => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '6px';
+        div.innerHTML = `Step ${i + 1}: <input type="text" style="width:85%" value="${step.replace(/"/g, '&quot;')}" onchange="currentSteps[${i}]=this.value">`;
+        box.appendChild(div);
+      });
+      exportToJSON();
+    }
+
+    function exportToJSON() {
+      document.getElementById('output').value = JSON.stringify(currentSteps, null, 2) + ",";
+    }
+  </script>
+</body>
+</html>

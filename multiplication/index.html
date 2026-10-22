@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplication Practice</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div id="math-container"></div>
+
+  <script src="../student.js"></script>
+  <script>
+    const DATA = [
+      // Example 1: Whole number multiplication
+      [
+        '<span class="frac"><span class="num">1</span><span class="den">5</span></span> · 2',
+        '<span class="frac"><span class="num">1</span><span class="den">5</span></span> · <span class="frac"><span class="num">2</span><span class="den">1</span></span>',
+        '<span class="frac"><span class="num">2</span><span class="den">5</span></span>'
+      ],
+      // Example 2: Diagonal cancellation
+      [
+        '<span class="frac"><span class="num">3</span><span class="den">7</span></span> · <span class="frac"><span class="num">8</span><span class="den">9</span></span>',
+        '<span class="frac"><span class="num"><span class="cross">3<span class="sub-num">1</span></span></span><span class="den">7</span></span> · <span class="frac"><span class="num">8</span><span class="den"><span class="cross">9<span class="sub-num">3</span></span></span></span>',
+        '<span class="frac"><span class="num">8</span><span class="den">21</span></span>'
+      ]
+    ];
+    new MathPresenter(DATA);
+  </script>
+</body>
+</html>

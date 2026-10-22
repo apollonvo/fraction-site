@@ -1,0 +1,82 @@
+* {
+  box-sizing: border-box;
+  user-select: none; /* Prevents text selection on rapid clicking */
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: 'Times New Roman', Times, serif;
+  overflow: hidden;
+}
+
+#math-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px;
+  font-size: min(5.5vw, 42px); /* Scales automatically for mobile and desktop */
+  cursor: pointer;
+  max-width: 95vw;
+  line-height: 1.2;
+}
+
+/* Vertical Fraction Layout */
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.num {
+  border-bottom: 2px solid #000;
+  padding-bottom: 2px;
+}
+
+.den {
+  padding-top: 2px;
+}
+
+/* Diagonal Blue Cancellation Line */
+.cross {
+  position: relative;
+  display: inline-block;
+}
+
+.cross::after {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: 50%;
+  width: 140%;
+  height: 2px;
+  background-color: #0066cc; /* Blue diagonal line */
+  transform: rotate(-45deg);
+}
+
+.cross .sub-num {
+  position: absolute;
+  font-size: 0.6em;
+  color: #0066cc;
+  font-weight: bold;
+}
+
+/* Small number positions: top for numerator, bottom for denominator */
+.num .cross .sub-num {
+  top: -14px;
+  right: -8px;
+}
+
+.den .cross .sub-num {
+  bottom: -14px;
+  right: -8px;
+}
