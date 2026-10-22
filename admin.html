@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Math Authoring Tool</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
       padding: 30px;
-      max-width: 850px;
+      max-width: 900px;
       margin: 0 auto !important;
       background: #f8fafc !important;
       color: #1e293b !important;
@@ -138,7 +138,7 @@
     <div id="equation-builder" class="terms-column"></div>
 
     <div style="display: flex; gap: 10px;">
-      <button class="action-btn" onclick="addTerm('+')">+ Add Term</button>
+      <button class="action-btn" onclick="addTerm('*')">+ Add Term</button>
       <button class="action-btn primary" onclick="solveEquation()">Solve & Generate</button>
       <button class="action-btn" onclick="resetEquation()">Reset</button>
     </div>
@@ -161,7 +161,8 @@
     const lcm = (a, b) => Math.abs(a * b) / gcd(a, b);
 
     function formatFracHTML(whole, n, d) {
-      if (n === 0 || d === 0) return `${whole || 0}`;
+      if (n === 0) return `${whole || 0}`;
+      if (d === 1) return `${(whole ? whole : 0) + n}`;
       let fracPart = `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
       return whole > 0 ? `${whole} ${fracPart}` : fracPart;
     }
@@ -179,7 +180,7 @@
         if (i > 0) {
           const opSelect = document.createElement('select');
           opSelect.className = 'op-select';
-          ['+', '-', '*', '/'].forEach(o => {
+          ['*', '/', '+', '-'].forEach(o => {
             const opt = document.createElement('option');
             opt.value = o;
             opt.textContent = o === '*' ? '·' : (o === '/' ? '÷' : o);
@@ -198,7 +199,6 @@
 
         const box = document.createElement('div');
         box.className = 'term-box';
-        // Strict ordering: w-in (Whole) -> n-in (Num) -> d-in (Den)
         box.innerHTML = `
           <input type="number" placeholder="Whole" value="${t.whole}" class="w-in" data-idx="${i}">
           <div class="frac-inputs">
@@ -214,12 +214,12 @@
       attachShortcuts();
     }
 
-    function addTerm(op = '+') {
+    function addTerm(op = '*') {
       terms.push({ op, whole: '', n: '', d: '' });
       renderInputs();
       setTimeout(() => {
         const wholes = document.querySelectorAll('.w-in');
-        wholes[wholes.length - 1].focus(); // Focus on Whole number first
+        wholes[wholes.length - 1].focus();
       }, 50);
     }
 
@@ -238,7 +238,6 @@
     }
 
     function attachShortcuts() {
-      // Gather inputs in the exact logical order: Term0(W, N, D), Term1(W, N, D), etc.
       const orderedInputs = [];
       document.querySelectorAll('.term-box').forEach(box => {
         orderedInputs.push(box.querySelector('.w-in'));
@@ -255,21 +254,16 @@
         };
 
         inp.onkeydown = (e) => {
-          // Space bar strictly moves to the next field in sequence
           if (e.key === ' ') {
             e.preventDefault();
-            if (idx + 1 < orderedInputs.length) {
-              orderedInputs[idx + 1].focus();
-            }
-          }
-          // Backspace in empty box deletes term
-          else if (e.key === 'Backspace' && e.target.value === '') {
+            if (idx + 1 < orderedInputs.length) orderedInputs[idx + 1].focus();
+          } else if (e.key === 'Backspace' && e.target.value === '') {
             if (terms.length > 1 && idx === orderedInputs.length - 1) {
               e.preventDefault();
               removeTerm(terms.length - 1);
               setTimeout(() => {
-                const remaining = document.querySelectorAll('.term-box input');
-                if (remaining.length) remaining[remaining.length - 1].focus();
+                const rem = document.querySelectorAll('.term-box input');
+                if (rem.length) rem[rem.length - 1].focus();
               }, 20);
             }
           }
@@ -282,7 +276,6 @@
       });
     }
 
-    // Helper to package equation row + optional scratchpad area
     function makeStepHTML(eqHTML, scratchpadList = []) {
       let html = `<div class="math-equation-row">${eqHTML}</div>`;
       if (scratchpadList.length > 0) {
@@ -295,69 +288,157 @@
 
     function solveEquation() {
       document.querySelectorAll('.term-box').forEach((box, i) => {
-        terms[i].whole = parseInt(box.querySelector('.w-in').value) || 0;
-        terms[i].n = parseInt(box.querySelector('.n-in').value) || 0;
-        terms[i].d = parseInt(box.querySelector('.d-in').value) || 1;
+        const wStr = box.querySelector('.w-in').value.trim();
+        const nStr = box.querySelector('.n-in').value.trim();
+        const dStr = box.querySelector('.d-in').value.trim();
+
+        terms[i].whole = wStr === '' ? 0 : parseInt(wStr);
+        terms[i].n = nStr === '' ? 0 : parseInt(nStr);
+        terms[i].d = dStr === '' ? 1 : parseInt(dStr);
       });
 
       let steps = [];
 
-      // Step 1: Initial Problem as entered
+      // Step 1: Base problem representation
       let baseProblemHTML = terms.map((t, i) => {
         let opPart = i > 0 ? ` ${t.op === '*' ? '·' : (t.op === '/' ? '÷' : t.op)} ` : '';
+        // If whole only:
+        if (t.whole > 0 && t.n === 0) return opPart + `${t.whole}`;
         return opPart + formatFracHTML(t.whole, t.n, t.d);
       }).join('');
 
+      // Find TRUE mixed fractions: whole > 0 AND n > 0 (excludes pure whole numbers)
       let mixedIndices = [];
-      terms.forEach((t, i) => { if (t.whole > 0) mixedIndices.push(i); });
+      terms.forEach((t, i) => {
+        if (t.whole > 0 && t.n > 0) mixedIndices.push(i);
+      });
 
       let currentScratchpad = [];
+      steps.push(makeStepHTML(baseProblemHTML));
 
-      if (mixedIndices.length === 0) {
-        // No mixed numbers: start simply with problem
-        steps.push(makeStepHTML(baseProblemHTML));
-      } else {
-        // Has mixed numbers: Step 1 is the equation alone
-        steps.push(makeStepHTML(baseProblemHTML));
-
-        // Generate scratchpad steps 1 by 1: e.g. "1) 2 · 5 + 4 = 14"
+      // Generate scratchpad lines for mixed numbers only
+      if (mixedIndices.length > 0) {
         mixedIndices.forEach((termIdx, numStep) => {
           let t = terms[termIdx];
           let calcStr = `${numStep + 1}) ${t.whole} · ${t.d} + ${t.n} = ${t.whole * t.d + t.n}`;
           currentScratchpad.push(calcStr);
-          // Keep showing initial problem with accumulating scratchpad lines below
           steps.push(makeStepHTML(baseProblemHTML, [...currentScratchpad]));
         });
       }
 
-      // Converted improper fraction terms
-      let working = terms.map(t => ({
-        op: t.op,
-        n: (t.whole * t.d) + t.n,
-        d: t.d
-      }));
+      // Convert all terms to pure fractions (whole numbers become W/1)
+      let working = terms.map(t => {
+        let numVal = t.whole > 0 && t.n === 0 ? t.whole : (t.whole * t.d) + t.n;
+        return {
+          op: t.op,
+          n: numVal,
+          d: t.d
+        };
+      });
 
-      // Converted improper fraction equation
+      // Show equation with improper fractions
       let improperHTML = working.map((t, i) => {
         let opPart = i > 0 ? ` ${t.op === '*' ? '·' : (t.op === '/' ? '÷' : t.op)} ` : '';
-        return opPart + formatFracHTML(0, t.n, t.d);
+        return opPart + `<span class="frac"><span class="num">${t.n}</span><span class="den">${t.d}</span></span>`;
       }).join('');
 
-      if (mixedIndices.length > 0) {
-        // Show the equation with fractions replacing mixed numbers, keeping scratchpad visible
-        steps.push(makeStepHTML(baseProblemHTML + ' = ' + improperHTML, currentScratchpad));
+      let activeEq = baseProblemHTML;
+      if (mixedIndices.length > 0 || terms.some(t => t.whole > 0 && t.n === 0)) {
+        activeEq += ' = ' + improperHTML;
+        steps.push(makeStepHTML(activeEq, currentScratchpad));
       }
 
-      // Addition / Subtraction Chains
+      // --- MULTIPLICATION / DIVISION HANDLER ---
+      let isMultDiv = working.every((t, i) => i === 0 || t.op === '*' || t.op === '/');
+
+      if (isMultDiv) {
+        // Step A: Invert division terms
+        let hasDiv = working.some(t => t.op === '/');
+        let multOnly = working.map((t, i) => {
+          if (t.op === '/') return { op: '*', n: t.d, d: t.n };
+          return { op: '*', n: t.n, d: t.d };
+        });
+
+        if (hasDiv) {
+          let invertedHTML = multOnly.map((t, i) => {
+            let opPart = i > 0 ? ' · ' : '';
+            return opPart + `<span class="frac"><span class="num">${t.n}</span><span class="den">${t.d}</span></span>`;
+          }).join('');
+          activeEq += ' = ' + invertedHTML;
+          steps.push(makeStepHTML(activeEq, currentScratchpad));
+        }
+
+        // Step B: Unified Fraction Bar
+        let bigNumStr = multOnly.map(t => t.n).join(' · ');
+        let bigDenStr = multOnly.map(t => t.d).join(' · ');
+        let unifiedFracHTML = `<span class="frac"><span class="num">${bigNumStr}</span><span class="den">${bigDenStr}</span></span>`;
+        
+        activeEq += ' = ' + unifiedFracHTML;
+        steps.push(makeStepHTML(activeEq, currentScratchpad));
+
+        // Step C: Cross-Cancellation Algorithm
+        let numFactors = multOnly.map(t => ({ val: t.n, cancelled: false, res: t.n }));
+        let denFactors = multOnly.map(t => ({ val: t.d, cancelled: false, res: t.d }));
+
+        let didCancel = false;
+
+        for (let i = 0; i < numFactors.length; i++) {
+          for (let j = 0; j < denFactors.length; j++) {
+            let g = gcd(numFactors[i].res, denFactors[j].res);
+            if (g > 1) {
+              didCancel = true;
+              numFactors[i].res = numFactors[i].res / g;
+              denFactors[j].res = denFactors[j].res / g;
+              numFactors[i].cancelled = true;
+              denFactors[j].cancelled = true;
+            }
+          }
+        }
+
+        if (didCancel) {
+          let crossNumStr = numFactors.map(nf => {
+            return nf.cancelled 
+              ? `<span class="cross">${nf.val}<span class="sub-num">${nf.res}</span></span>` 
+              : `${nf.val}`;
+          }).join(' · ');
+
+          let crossDenStr = denFactors.map(df => {
+            return df.cancelled 
+              ? `<span class="cross">${df.val}<span class="sub-num">${df.res}</span></span>` 
+              : `${df.val}`;
+          }).join(' · ');
+
+          let crossFracHTML = `<span class="frac"><span class="num">${crossNumStr}</span><span class="den">${crossDenStr}</span></span>`;
+          activeEq += ' = ' + crossFracHTML;
+          steps.push(makeStepHTML(activeEq, currentScratchpad));
+        }
+
+        // Step D: Calculate final product
+        let finalNum = numFactors.reduce((acc, f) => acc * f.res, 1);
+        let finalDen = denFactors.reduce((acc, f) => acc * f.res, 1);
+
+        if (finalDen === 1) {
+          activeEq += ` = <span class="frac"><span class="num">${finalNum}</span><span class="den">1</span></span> = ${finalNum}`;
+        } else {
+          activeEq += ` = <span class="frac"><span class="num">${finalNum}</span><span class="den">${finalDen}</span></span>`;
+          if (finalNum > finalDen) {
+            let wholeAns = Math.floor(finalNum / finalDen);
+            let remAns = finalNum % finalDen;
+            if (remAns > 0) {
+              activeEq += ` = ${wholeAns} <span class="frac"><span class="num">${remAns}</span><span class="den">${finalDen}</span></span>`;
+            }
+          }
+        }
+        steps.push(makeStepHTML(activeEq, currentScratchpad));
+      }
+
+      // --- ADDITION / SUBTRACTION HANDLER ---
       let isAddSub = working.every((t, i) => i === 0 || t.op === '+' || t.op === '-');
       if (isAddSub) {
         let commonDen = working.map(t => t.d).reduce((a, b) => lcm(a, b), 1);
         let needsLCD = working.some(t => t.d !== commonDen);
 
-        let activeEq = (mixedIndices.length > 0) ? (baseProblemHTML + ' = ' + improperHTML) : improperHTML;
-
         if (needsLCD) {
-          // Expansion factors
           let expHTML = working.map((t, i) => {
             let mult = commonDen / t.d;
             let opPart = i > 0 ? ` ${t.op} ` : '';
@@ -368,7 +449,6 @@
           activeEq += ' = ' + expHTML;
           steps.push(makeStepHTML(activeEq, currentScratchpad));
 
-          // Common fractions
           let commonHTML = working.map((t, i) => {
             let opPart = i > 0 ? ` ${t.op} ` : '';
             return opPart + formatFracHTML(0, t.n * (commonDen / t.d), commonDen);
@@ -377,7 +457,6 @@
           steps.push(makeStepHTML(activeEq, currentScratchpad));
         }
 
-        // Sum numerators
         let totalNum = working.reduce((acc, t, i) => {
           let val = t.n * (commonDen / t.d);
           return i === 0 ? val : (t.op === '+' ? acc + val : acc - val);
@@ -386,7 +465,6 @@
         activeEq += ' = ' + formatFracHTML(0, totalNum, commonDen);
         steps.push(makeStepHTML(activeEq, currentScratchpad));
 
-        // Simplification
         let g = gcd(totalNum, commonDen);
         if (g > 1) {
           let redN = totalNum / g;
@@ -411,7 +489,7 @@
         previewBox.appendChild(line);
       });
 
-      // Export JSON
+      // Output JSON array
       document.getElementById('output-json').value = JSON.stringify(steps, null, 2) + ',';
     }
 
