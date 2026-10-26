@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Practice</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0; padding: 0; min-height: 100vh;
+      background-color: #ffffff; color: #000000;
+      font-family: 'Times New Roman', Times, serif;
+      cursor: pointer;
+    }
+    #math-container {
+      display: block;
+      text-align: left;
+      padding: 30px;
+      font-size: min(5.5vw, 38px);
+      line-height: 2.2;
+      max-width: 1000px;
+    }
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 4px;
+      line-height: 1.1;
+      font-size: 0.9em;
+    }
+    .num { border-bottom: 2px solid #000; padding-bottom: 2px; }
+    .den { padding-top: 2px; }
+    .cross {
+      position: relative;
+      display: inline-block;
+      padding: 0 2px;
+    }
+    .cross::after {
+      content: "";
+      position: absolute;
+      left: -15%; top: 50%;
+      width: 130%; height: 2px;
+      background-color: #0066cc;
+      transform: rotate(-45deg);
+    }
+    .cross .sub-num {
+      position: absolute;
+      font-size: 0.55em;
+      color: #0066cc;
+      font-weight: bold;
+    }
+    .num .cross .sub-num { top: -14px; right: -6px; }
+    .den .cross .sub-num { bottom: -14px; right: -6px; }
+    .scratchpad {
+      margin-top: 20px;
+      font-size: 0.75em;
+      color: #222;
+      line-height: 1.6;
+    }
+    .scratchpad-line { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div id="math-container"></div>
+
+  <script>
+    // Paste arrays produced by admin.html directly inside DATA:
+    const DATA = [
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">4</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">2 · 2</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> = <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">4</span></span> = 1 <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3 · 3</span><span class=\"den\">4 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3 · 3</span><span class=\"den\">4 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3 · 3</span><span class=\"den\">4 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">12</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3 · 3</span><span class=\"den\">4 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">2</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3 · 3</span><span class=\"den\">4 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">12</span></span> = <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">2</span></span> = 1 <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">2</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">4 · 4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">4 · 4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">16</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">4 · 4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">16</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">19</span><span class=\"den\">16</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">4 · 4</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">16</span></span> + <span class=\"frac\"><span class=\"num\">15</span><span class=\"den\">16</span></span> = <span class=\"frac\"><span class=\"num\">19</span><span class=\"den\">16</span></span> = 1 <span class=\"frac\"><span class=\"num\">3</span><span class=\"den\">16</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">8 · 3</span><span class=\"den\">15 · 3</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">8 · 3</span><span class=\"den\">15 · 3</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">24</span><span class=\"den\">45</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">8 · 3</span><span class=\"den\">15 · 3</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">24</span><span class=\"den\">45</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">56</span><span class=\"den\">45</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">8 · 3</span><span class=\"den\">15 · 3</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">24</span><span class=\"den\">45</span></span> + <span class=\"frac\"><span class=\"num\">32</span><span class=\"den\">45</span></span> = <span class=\"frac\"><span class=\"num\">56</span><span class=\"den\">45</span></span> = 1 <span class=\"frac\"><span class=\"num\">11</span><span class=\"den\">45</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">4 · 3</span><span class=\"den\">5 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">4 · 3</span><span class=\"den\">5 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">4 · 3</span><span class=\"den\">5 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">15</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">4 · 3</span><span class=\"den\">5 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">5</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">5</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">4 · 3</span><span class=\"den\">5 · 3</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">15</span></span> + <span class=\"frac\"><span class=\"num\">9</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">15</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">5</span></span> = 1 <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">5</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">2 · 9</span><span class=\"den\">3 · 9</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">2 · 9</span><span class=\"den\">3 · 9</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">27</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">2 · 9</span><span class=\"den\">3 · 9</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">27</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">38</span><span class=\"den\">27</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">2 · 9</span><span class=\"den\">3 · 9</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">18</span><span class=\"den\">27</span></span> + <span class=\"frac\"><span class=\"num\">20</span><span class=\"den\">27</span></span> = <span class=\"frac\"><span class=\"num\">38</span><span class=\"den\">27</span></span> = 1 <span class=\"frac\"><span class=\"num\">11</span><span class=\"den\">27</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2 · 3</span><span class=\"den\">3 · 3</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2 · 3</span><span class=\"den\">3 · 3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">6</span><span class=\"den\">9</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2 · 3</span><span class=\"den\">3 · 3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">6</span><span class=\"den\">9</span></span> = <span class=\"frac\"><span class=\"num\">13</span><span class=\"den\">9</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">2 · 3</span><span class=\"den\">3 · 3</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">6</span><span class=\"den\">9</span></span> = <span class=\"frac\"><span class=\"num\">13</span><span class=\"den\">9</span></span> = 1 <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">9</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">8 · 2</span><span class=\"den\">9 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">8 · 2</span><span class=\"den\">9 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">16</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">8 · 2</span><span class=\"den\">9 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">16</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">8 · 2</span><span class=\"den\">9 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">16</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">6</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">8</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">8 · 2</span><span class=\"den\">9 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">16</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">21</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">6</span></span> = 1 <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">6</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">2 · 6</span><span class=\"den\">3 · 6</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">2 · 6</span><span class=\"den\">3 · 6</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">3</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">2 · 6</span><span class=\"den\">3 · 6</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">12</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> = <span class=\"frac\"><span class=\"num\">13</span><span class=\"den\">18</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">18 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">18 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">36</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">18</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 2</span><span class=\"den\">18 · 2</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">2</span><span class=\"den\">36</span></span> + <span class=\"frac\"><span class=\"num\">5</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span></div>"
+      ],
+      [
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">9 · 4</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">9 · 4</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">36</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span></div>",
+        "<div class=\"math-equation-row\"><span class=\"frac\"><span class=\"num\">1</span><span class=\"den\">9</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">1 · 4</span><span class=\"den\">9 · 4</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">4</span><span class=\"den\">36</span></span> + <span class=\"frac\"><span class=\"num\">7</span><span class=\"den\">36</span></span> = <span class=\"frac\"><span class=\"num\">11</span><span class=\"den\">36</span></span></div>"
+      ]
+    ];
+
+    let exIdx = 0;
+    let stepIdx = 0;
+    const container = document.getElementById("math-container");
+
+    function render() {
+      container.innerHTML = DATA[exIdx][stepIdx];
+    }
+
+    function advance() {
+      if (stepIdx < DATA[exIdx].length - 1) {
+        stepIdx++;
+      } else {
+        exIdx = (exIdx + 1) % DATA.length;
+        stepIdx = 0;
+      }
+      render();
+    }
+
+    window.addEventListener("pointerdown", (e) => {
+      if (e.button === 0) advance();
+    });
+    window.addEventListener("keydown", advance);
+
+    render();
+  </script>
+</body>
+</html>
