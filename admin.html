@@ -302,56 +302,52 @@
       // Step 1: Base problem representation
       let baseProblemHTML = terms.map((t, i) => {
         let opPart = i > 0 ? ` ${t.op === '*' ? '·' : (t.op === '/' ? '÷' : t.op)} ` : '';
-        // If whole only:
         if (t.whole > 0 && t.n === 0) return opPart + `${t.whole}`;
         return opPart + formatFracHTML(t.whole, t.n, t.d);
       }).join('');
 
-      // Find TRUE mixed fractions: whole > 0 AND n > 0 (excludes pure whole numbers)
-      let mixedIndices = [];
-      terms.forEach((t, i) => {
-        if (t.whole > 0 && t.n > 0) mixedIndices.push(i);
-      });
-
-      let currentScratchpad = [];
       steps.push(makeStepHTML(baseProblemHTML));
-
-      // Generate scratchpad lines for mixed numbers only
-      if (mixedIndices.length > 0) {
-        mixedIndices.forEach((termIdx, numStep) => {
-          let t = terms[termIdx];
-          let calcStr = `${numStep + 1}) ${t.whole} · ${t.d} + ${t.n} = ${t.whole * t.d + t.n}`;
-          currentScratchpad.push(calcStr);
-          steps.push(makeStepHTML(baseProblemHTML, [...currentScratchpad]));
-        });
-      }
-
-      // Convert all terms to pure fractions (whole numbers become W/1)
-      let working = terms.map(t => {
-        let numVal = t.whole > 0 && t.n === 0 ? t.whole : (t.whole * t.d) + t.n;
-        return {
-          op: t.op,
-          n: numVal,
-          d: t.d
-        };
-      });
-
-      // Show equation with improper fractions
-      let improperHTML = working.map((t, i) => {
-        let opPart = i > 0 ? ` ${t.op === '*' ? '·' : (t.op === '/' ? '÷' : t.op)} ` : '';
-        return opPart + `<span class="frac"><span class="num">${t.n}</span><span class="den">${t.d}</span></span>`;
-      }).join('');
-
       let activeEq = baseProblemHTML;
-      if (mixedIndices.length > 0 || terms.some(t => t.whole > 0 && t.n === 0)) {
-        activeEq += ' = ' + improperHTML;
-        steps.push(makeStepHTML(activeEq, currentScratchpad));
-      }
+
+      let isMultDiv = terms.every((t, i) => i === 0 || t.op === '*' || t.op === '/');
+      let isAddSub = terms.every((t, i) => i === 0 || t.op === '+' || t.op === '-');
 
       // --- MULTIPLICATION / DIVISION HANDLER ---
-      let isMultDiv = working.every((t, i) => i === 0 || t.op === '*' || t.op === '/');
-
       if (isMultDiv) {
+        let mixedIndices = [];
+        terms.forEach((t, i) => {
+          if (t.whole > 0 && t.n > 0) mixedIndices.push(i);
+        });
+
+        let currentScratchpad = [];
+
+        // Generate scratchpad lines for mixed numbers only
+        if (mixedIndices.length > 0) {
+          mixedIndices.forEach((termIdx, numStep) => {
+            let t = terms[termIdx];
+            let calcStr = `${numStep + 1}) ${t.whole} · ${t.d} + ${t.n} = ${t.whole * t.d + t.n}`;
+            currentScratchpad.push(calcStr);
+            steps.push(makeStepHTML(baseProblemHTML, [...currentScratchpad]));
+          });
+        }
+
+        // Convert all terms to pure fractions (whole numbers become W/1)
+        let working = terms.map(t => {
+          let numVal = t.whole > 0 && t.n === 0 ? t.whole : (t.whole * t.d) + t.n;
+          return { op: t.op, n: numVal, d: t.d };
+        });
+
+        // Show equation with improper fractions
+        let improperHTML = working.map((t, i) => {
+          let opPart = i > 0 ? ` ${t.op === '*' ? '·' : (t.op === '/' ? '÷' : t.op)} ` : '';
+          return opPart + `<span class="frac"><span class="num">${t.n}</span><span class="den">${t.d}</span></span>`;
+        }).join('');
+
+        if (mixedIndices.length > 0 || terms.some(t => t.whole > 0 && t.n === 0)) {
+          activeEq += ' = ' + improperHTML;
+          steps.push(makeStepHTML(activeEq, currentScratchpad));
+        }
+
         // Step A: Invert division terms
         let hasDiv = working.some(t => t.op === '/');
         let multOnly = working.map((t, i) => {
@@ -433,47 +429,154 @@
       }
 
       // --- ADDITION / SUBTRACTION HANDLER ---
-      let isAddSub = working.every((t, i) => i === 0 || t.op === '+' || t.op === '-');
       if (isAddSub) {
-        let commonDen = working.map(t => t.d).reduce((a, b) => lcm(a, b), 1);
-        let needsLCD = working.some(t => t.d !== commonDen);
+        let currentScratchpad = [];
+        let fracTerms = terms.filter(t => t.n > 0);
+        let commonDen = fracTerms.length > 0
+          ? fracTerms.map(t => t.d).reduce((a, b) => lcm(a, b), 1)
+          : 1;
 
+        let needsLCD = fracTerms.some(t => t.d !== commonDen);
+
+        // Step 1: LCD Expansion
         if (needsLCD) {
-          let expHTML = working.map((t, i) => {
-            let mult = commonDen / t.d;
+          let expHTML = terms.map((t, i) => {
             let opPart = i > 0 ? ` ${t.op} ` : '';
-            return mult > 1 
-              ? opPart + `<span class="frac"><span class="num">${t.n} · ${mult}</span><span class="den">${t.d} · ${mult}</span></span>`
-              : opPart + formatFracHTML(0, t.n, t.d);
+            if (t.n === 0) return opPart + `${t.whole || 0}`;
+            let mult = commonDen / t.d;
+            if (mult > 1) {
+              let fracPart = `<span class="frac"><span class="num">${t.n} · ${mult}</span><span class="den">${t.d} · ${mult}</span></span>`;
+              return opPart + (t.whole > 0 ? `${t.whole} ${fracPart}` : fracPart);
+            }
+            return opPart + formatFracHTML(t.whole, t.n, t.d);
           }).join('');
           activeEq += ' = ' + expHTML;
           steps.push(makeStepHTML(activeEq, currentScratchpad));
 
-          let commonHTML = working.map((t, i) => {
+          let commonHTML = terms.map((t, i) => {
             let opPart = i > 0 ? ` ${t.op} ` : '';
-            return opPart + formatFracHTML(0, t.n * (commonDen / t.d), commonDen);
+            if (t.n === 0) return opPart + `${t.whole || 0}`;
+            let mult = commonDen / t.d;
+            return opPart + formatFracHTML(t.whole, t.n * mult, commonDen);
           }).join('');
           activeEq += ' = ' + commonHTML;
           steps.push(makeStepHTML(activeEq, currentScratchpad));
         }
 
-        let totalNum = working.reduce((acc, t, i) => {
-          let val = t.n * (commonDen / t.d);
-          return i === 0 ? val : (t.op === '+' ? acc + val : acc - val);
-        }, 0);
+        let currTerms = terms.map(t => {
+          let mult = t.n > 0 ? commonDen / t.d : 1;
+          return {
+            op: t.op,
+            whole: t.whole,
+            n: t.n * mult,
+            d: commonDen
+          };
+        });
 
-        activeEq += ' = ' + formatFracHTML(0, totalNum, commonDen);
-        steps.push(makeStepHTML(activeEq, currentScratchpad));
+        let allAdd = currTerms.every((t, i) => i === 0 || t.op === '+');
 
-        let g = gcd(totalNum, commonDen);
-        if (g > 1) {
-          let redN = totalNum / g;
-          let redD = commonDen / g;
-          activeEq += ' = ' + formatFracHTML(0, redN, redD);
+        if (allAdd) {
+          let ansWhole = currTerms.reduce((sum, t) => sum + t.whole, 0);
+          let ansNum = currTerms.reduce((sum, t) => sum + t.n, 0);
+          let ansDen = commonDen;
+
+          activeEq += ' = ' + formatFracHTML(ansWhole, ansNum, ansDen);
           steps.push(makeStepHTML(activeEq, currentScratchpad));
 
-          if (redN > redD && redD !== 1) {
-            activeEq += ' = ' + formatFracHTML(Math.floor(redN / redD), redN % redD, redD);
+          // 1) Simplify / reduce fraction FIRST
+          if (ansNum > 0) {
+            let g = gcd(ansNum, ansDen);
+            if (g > 1) {
+              ansNum /= g;
+              ansDen /= g;
+              if (ansDen === 1) {
+                ansWhole += ansNum;
+                ansNum = 0;
+                activeEq += ' = ' + ansWhole;
+              } else {
+                activeEq += ' = ' + formatFracHTML(ansWhole, ansNum, ansDen);
+              }
+              steps.push(makeStepHTML(activeEq, currentScratchpad));
+            }
+          }
+
+          // 2) Convert excess numerator to whole part NEXT
+          if (ansNum >= ansDen && ansDen > 1) {
+            let extra = Math.floor(ansNum / ansDen);
+            let rem = ansNum % ansDen;
+            ansWhole += extra;
+            ansNum = rem;
+            activeEq += ' = ' + (rem === 0 ? `${ansWhole}` : formatFracHTML(ansWhole, rem, ansDen));
+            steps.push(makeStepHTML(activeEq, currentScratchpad));
+          }
+        } else {
+          // Sequential evaluation for subtraction & mixed
+          let running = { whole: currTerms[0].whole, n: currTerms[0].n, d: commonDen };
+
+          for (let i = 1; i < currTerms.length; i++) {
+            let nextT = currTerms[i];
+
+            if (nextT.op === '-') {
+              // Borrow from whole part only if fractional part of minuend is smaller
+              if (running.n < nextT.n) {
+                let needed = nextT.n - running.n;
+                let borrowCount = Math.ceil(needed / commonDen);
+                if (running.whole >= borrowCount) {
+                  // Explanation scratchpad calculation (e.g., 1 · 6 + 2 = 8)
+                  let calcStr = running.n > 0 
+                    ? `${currentScratchpad.length + 1}) ${borrowCount} · ${commonDen} + ${running.n} = ${borrowCount * commonDen + running.n}`
+                    : `${currentScratchpad.length + 1}) ${borrowCount} · ${commonDen} = ${borrowCount * commonDen}`;
+                  currentScratchpad.push(calcStr);
+                  
+                  // Show scratchpad alongside current comparable equation
+                  steps.push(makeStepHTML(activeEq, [...currentScratchpad]));
+
+                  running.whole -= borrowCount;
+                  running.n += borrowCount * commonDen;
+
+                  let borrowedStr = formatFracHTML(running.whole, running.n, commonDen);
+                  let remStr = currTerms.slice(i).map(t => ` ${t.op} ` + formatFracHTML(t.whole, t.n, commonDen)).join('');
+                  activeEq += ' = ' + borrowedStr + remStr;
+                  steps.push(makeStepHTML(activeEq, [...currentScratchpad]));
+                }
+              }
+              running.whole -= nextT.whole;
+              running.n -= nextT.n;
+            } else {
+              running.whole += nextT.whole;
+              running.n += nextT.n;
+            }
+
+            let stepStr = formatFracHTML(running.whole, running.n, commonDen);
+            let remStr = currTerms.slice(i + 1).map(t => ` ${t.op} ` + formatFracHTML(t.whole, t.n, commonDen)).join('');
+            activeEq += ' = ' + stepStr + remStr;
+            steps.push(makeStepHTML(activeEq, currentScratchpad));
+          }
+
+          // 1) Simplify / reduce fraction FIRST
+          if (running.n > 0) {
+            let g = gcd(running.n, running.d);
+            if (g > 1) {
+              running.n /= g;
+              running.d /= g;
+              if (running.d === 1) {
+                running.whole += running.n;
+                running.n = 0;
+                activeEq += ' = ' + running.whole;
+              } else {
+                activeEq += ' = ' + formatFracHTML(running.whole, running.n, running.d);
+              }
+              steps.push(makeStepHTML(activeEq, currentScratchpad));
+            }
+          }
+
+          // 2) Convert excess numerator to whole part NEXT
+          if (running.n >= running.d && running.d > 1) {
+            let extra = Math.floor(running.n / running.d);
+            let rem = running.n % running.d;
+            running.whole += extra;
+            running.n = rem;
+            activeEq += ' = ' + (rem === 0 ? `${running.whole}` : formatFracHTML(running.whole, rem, running.d));
             steps.push(makeStepHTML(activeEq, currentScratchpad));
           }
         }
