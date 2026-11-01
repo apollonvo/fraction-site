@@ -59,10 +59,21 @@
       line-height: 1.6;
     }
     .scratchpad-line { margin-bottom: 6px; }
+    #back-btn {
+      position: fixed;
+      left: 20px; bottom: 20px;
+      width: 56px; height: 56px;
+      border: 2px solid #ccc; border-radius: 50%;
+      background: #fff; color: #888;
+      font-size: 28px; line-height: 1;
+      cursor: pointer;
+    }
+    #back-btn:hover { border-color: #0066cc; color: #0066cc; }
   </style>
 </head>
 <body>
   <div id="math-container"></div>
+  <button id="back-btn" title="Назад (←)">←</button>
 
   <script>
     // Paste arrays produced by admin.html directly inside DATA:
@@ -159,10 +170,29 @@
       render();
     }
 
+    // Step back; from the first step of an example, jump to the last step of the previous one
+    function goBack() {
+      if (stepIdx > 0) {
+        stepIdx--;
+      } else {
+        exIdx = (exIdx - 1 + DATA.length) % DATA.length;
+        stepIdx = DATA[exIdx].length - 1;
+      }
+      render();
+    }
+
+    document.getElementById("back-btn").addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      if (e.button === 0) goBack();
+    });
+
     window.addEventListener("pointerdown", (e) => {
       if (e.button === 0) advance();
     });
-    window.addEventListener("keydown", advance);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "Backspace") goBack();
+      else advance();
+    });
 
     render();
   </script>
