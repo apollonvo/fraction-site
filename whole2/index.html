@@ -59,10 +59,32 @@
       line-height: 1.6;
     }
     .scratchpad-line { margin-bottom: 6px; }
+    #back-btn {
+      position: fixed;
+      left: 20px; bottom: 20px;
+      width: 56px; height: 56px;
+      border: 2px solid #ccc; border-radius: 50%;
+      background: #fff; color: #888;
+      font-size: 28px; line-height: 1;
+      cursor: pointer;
+    }
+    #restart-btn {
+      display: none;
+      position: fixed;
+      left: 88px; bottom: 20px;
+      height: 56px; padding: 0 22px;
+      border: 2px solid #ccc; border-radius: 28px;
+      background: #fff; color: #888;
+      font-family: inherit; font-size: 24px;
+      cursor: pointer;
+    }
+    #back-btn:hover, #restart-btn:hover { border-color: #0066cc; color: #0066cc; }
   </style>
 </head>
 <body>
   <div id="math-container"></div>
+  <button id="back-btn" title="Назад (←)">←</button>
+  <button id="restart-btn">↻ Ще раз</button>
 
   <script>
     // Paste arrays produced by admin.html directly inside DATA:
@@ -130,24 +152,62 @@
     let stepIdx = 0;
     const container = document.getElementById("math-container");
 
+    const backBtn = document.getElementById("back-btn");
+    const restartBtn = document.getElementById("restart-btn");
+
     function render() {
       container.innerHTML = DATA[exIdx][stepIdx];
+      const isFirst = exIdx === 0 && stepIdx === 0;
+      const isLast = exIdx === DATA.length - 1 && stepIdx === DATA[exIdx].length - 1;
+      backBtn.style.visibility = isFirst ? "hidden" : "visible";
+      restartBtn.style.display = isLast ? "block" : "none";
     }
 
     function advance() {
       if (stepIdx < DATA[exIdx].length - 1) {
         stepIdx++;
-      } else {
-        exIdx = (exIdx + 1) % DATA.length;
+      } else if (exIdx < DATA.length - 1) {
+        exIdx++;
         stepIdx = 0;
+      } else {
+        return;
       }
       render();
     }
 
+    // Step back; from the first step of an example, jump to the last step of the previous one
+    function goBack() {
+      if (stepIdx > 0) {
+        stepIdx--;
+      } else if (exIdx > 0) {
+        exIdx--;
+        stepIdx = DATA[exIdx].length - 1;
+      } else {
+        return;
+      }
+      render();
+    }
+
+    backBtn.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      if (e.button === 0) goBack();
+    });
+
+    restartBtn.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      if (e.button !== 0) return;
+      exIdx = 0;
+      stepIdx = 0;
+      render();
+    });
+
     window.addEventListener("pointerdown", (e) => {
       if (e.button === 0) advance();
     });
-    window.addEventListener("keydown", advance);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "Backspace") goBack();
+      else advance();
+    });
 
     render();
   </script>
